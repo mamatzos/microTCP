@@ -1,0 +1,17 @@
+1. Make socket (initialize),                   micro_tcp_socket()
+
+2. Ascociate the packet with it's end host,    bind()
+
+3. Establish a connection,                     connect()
+
+4. Accept the incoming CONECTION               accept()
+
+5. Close the established connection            shutdown()
+
+
+SEGMENT --> Bytes
+WINDOW  --> Segments
+
+
+
+SEND AND RECEIVE PACKET NEXT PHASE
