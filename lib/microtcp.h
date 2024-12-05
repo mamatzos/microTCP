@@ -35,6 +35,13 @@
 #define MICROTCP_INIT_CWND (3 * MICROTCP_MSS)
 #define MICROTCP_INIT_SSTHRESH MICROTCP_WIN_SIZE
 
+/*
+ * Added constants for control bits (using bin representation)
+ */
+#define MICROTCP_SYN      2   /* 0000000000000010 */
+#define MICROTCP_ACK      8   /* 0000000000001000 */
+#define MICROTCP_SYN_ACK  10  /* 0000000000001010 */
+
 /**
  * Possible states of the microTCP socket
  *
