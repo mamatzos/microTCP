@@ -27,11 +27,26 @@ microtcp_socket (int domain, int type, int protocol)
   microtcp_sock_t socket;
   socket.sd = socket(domain, type, protocol);
   if (socket.sd == -1) {
+    socket.state = INVALID;
     perror("Failed to create the socket");
     return socket; /* return the invalid socket */
   }
   /* else init the socket fields */
-  
+  socket.state =          LISTEN; 
+  socket.init_win_size =  MICROTCP_WIN_SIZE; 
+  socket.curr_win_size =  MICROTCP_WIN_SIZE;
+  socket.recvbuf =        NULL;
+  socket.buf_fill_level = 0;
+  socket.cwnd =           MICROTCP_INIT_CWND;
+  socket.ssthresh =       MICROTCP_INIT_SSTHRESH;
+  socket.seq_number =     0;
+  socket.ack_number =     0;
+  socket.packets_send =     0;
+  socket.packets_received = 0;
+  socket.packets_lost =     0;
+  socket.bytes_send =       0;
+  socket.bytes_received =   0;
+  socket.bytes_lost =       0;
 
   return socket; /* return the valid socket */
 }
