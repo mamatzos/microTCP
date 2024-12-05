@@ -24,7 +24,16 @@
 microtcp_sock_t
 microtcp_socket (int domain, int type, int protocol)
 {
-  /* Your code here */
+  microtcp_sock_t socket;
+  socket.sd = socket(domain, type, protocol);
+  if (socket.sd == -1) {
+    perror("Failed to create the socket");
+    return socket; /* return the invalid socket */
+  }
+  /* else init the socket fields */
+  
+
+  return socket; /* return the valid socket */
 }
 
 int
