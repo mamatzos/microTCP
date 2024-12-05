@@ -1,12 +1,27 @@
-1. Make socket (initialize),                   micro_tcp_socket()
+1. Make socket (initialize),                   micro_tcp_socket()       DONE
 
-2. Ascociate the packet with it's end host,    bind()
+2. Ascociate the packet with it's end host,    bind()                   TODAY
 
-3. Establish a connection,                     connect()
+3. Establish a connection,                     connect()                TODAY
 
-4. Accept the incoming CONECTION               accept()
+4. Accept the incoming CONNECTION              accept()                 PARASKEVI
 
-5. Close the established connection            shutdown()
+5. Close the established connection            shutdown()               SAVATO-DEYTERA
+
+6. Bandwidth                                   bandwidth_test()         DEYTERA - vlepoyme
+
+TO KNOW:
+
+~ LEARN EACH ARGUMENT's OPERATION (all functions)
+
+~ socket()      (operation / return)
+~ microtcp_sock_t fields && initialized values (why / reason)
+
+~ bind()        (operation / return)    
+
+
+
+
 
 
 SEGMENT --> Bytes
