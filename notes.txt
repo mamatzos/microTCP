@@ -13,13 +13,17 @@ TIMELINE                                        EVENT               STATUS
 
 
 TO KNOW (for examination)
-
 ~ LEARN EACH ARGUMENT's OPERATION (all functions)
 
 ~ socket()      (operation / return)
 ~ microtcp_sock_t fields && initialized values (why / reason)
 
 ~ bind()        (operation / return)    
+
+~ connect()     (operation / return)
+
+~ HEADER
+    a. added a definition for control bits    ### ask in exam if sequence is correct
 
 
 USEFUL INFO
