@@ -1,16 +1,18 @@
-1. Make socket (initialize),                   micro_tcp_socket()       DONE
+TIMELINE                                        EVENT               STATUS
+1. Make socket (initialize),                    microtcp_socket()   DONE
 
-2. Ascociate the packet with it's end host,    bind()                   TODAY
+2. Ascociate the packet with it's end host,     microtcp_bind()     DONE
 
-3. Establish a connection,                     connect()                TODAY
+3. Establish a connection,                      microtcp_connect()  today
 
-4. Accept the incoming CONNECTION              accept()                 PARASKEVI
+4. Accept the incoming connection,              microtcp_accept()   friday
 
-5. Close the established connection            shutdown()               SAVATO-DEYTERA
+5. Close the established connection,            microtcp_shutdown() weekend
 
-6. Bandwidth                                   bandwidth_test()         DEYTERA - vlepoyme
+6. Bandwidth testing                            bandwidth_test()    monday
 
-TO KNOW:
+
+TO KNOW (for examination)
 
 ~ LEARN EACH ARGUMENT's OPERATION (all functions)
 
@@ -20,13 +22,8 @@ TO KNOW:
 ~ bind()        (operation / return)    
 
 
-
-
-
-
+USEFUL INFO
 SEGMENT --> Bytes
 WINDOW  --> Segments
-
-
 
 SEND AND RECEIVE PACKET NEXT PHASE
