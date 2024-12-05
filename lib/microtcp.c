@@ -56,7 +56,12 @@ int
 microtcp_bind (microtcp_sock_t *socket, const struct sockaddr *address,
                socklen_t address_len)
 {
-  /* Your code here */
+  /* assign the given address to the socket */
+  if (bind(socket->sd, address, address_len) == -1) {
+    perror("Failed to bind address to the socket");
+    return -1;
+  }
+  return 0;
 }
 
 int
