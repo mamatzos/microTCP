@@ -5,14 +5,14 @@ TIMELINE                                        EVENT               STATUS
 
 3. Establish a connection,                      microtcp_connect()  today
 
-4. Accept the incoming connection,              microtcp_accept()   friday
+4. Accept the incoming connection,              microtcp_accept()   
 
 5. Close the established connection,            microtcp_shutdown() weekend
 
 6. Bandwidth testing                            bandwidth_test()    monday
 
-
 TO KNOW (for examination)
+
 ~ LEARN EACH ARGUMENT's OPERATION (all functions)
 
 ~ socket()      (operation / return)
@@ -21,6 +21,11 @@ TO KNOW (for examination)
 ~ bind()        (operation / return)    
 
 ~ connect()     (operation / return)
+    -the casting to uint8_t is done because thats the required type
+    -sendto(): if address is wrong then it returns -1, else if all good
+    the size (in bytes) of the packet that is about to be sent is returned
+    at first the size is 0 thats why we use it for error checking olny.
+
 
 ~ HEADER
     a. added a definition for control bits    ### ask in exam if sequence is correct
@@ -30,4 +35,21 @@ USEFUL INFO
 SEGMENT --> Bytes
 WINDOW  --> Segments
 
-SEND AND RECEIVE PACKET NEXT PHASE
+
+~> SEND AND RECEIVE PACKET NEXT PHASE
+
+
+
+
+~~~~~ NOTES FOR TODAY ~~~~~
+
+FLAGS:
+ACK bit -> 1 ektos an eina proto packet
+
+RST bit -> if 1: connection reset 
+
+SYN bit -> Syncr seq numbers, declares connections initiate 
+    only once for each side of the connection on first packet / otherwise 0
+
+FIN bit -> terminates connection
+
