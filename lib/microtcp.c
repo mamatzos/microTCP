@@ -95,38 +95,69 @@ microtcp_connect (microtcp_sock_t *socket, const struct sockaddr *address,
     return -1;
   } /* SYN-ACK packet received */
 
-  /* check the received SYN-ACK packet with checksum */
-  syn_ack_packet.checksum = crc32((uint8_t *)&syn_ack_packet, sizeof(syn_ack_packet));
-  if (syn_ack_packet.checksum != syn_ack_packet.checksum) {
-    socket->state = INVALID;
-    perror("Checksum error on SYN-ACK packet");
-    return -1;
-  } /* checksum is correct */
+  /* create and send ACK packet */
+  microtcp_header_t ack_packet;
+  ack_packet.seq_number =   syn_ack_packet.ack_number; 
+  ack_packet.ack_number =   syn_ack_packet.seq_number + 1;
+  ack_packet.control =      MICROTCP_ACK;
+  ack_packet.window =       socket->curr_win_size;
+  ack_packet.data_len =     0;
+  ack_packet.future_use0 =  0;
+  ack_packet.future_use1 =  0;
+  ack_packet.future_use2 =  0;
+  ack_packet.checksum = crc32((uint8_t *)&ack_packet, sizeof(ack_packet));
 
+  /* first compare checksums */
+  if (ack_packet.checksum != syn_ack_packet.checksum) {
+    socket->state = INVALID;
+    perror("SYN_ACK ACK checksums mismatch");
+    return -1;
+  } /* checksums match */
+
+  /* ensure received packet is SYN_ACK */
+  if (syn_ack_packet.control != MICROTCP_SYN_ACK) {
+    socket->state = INVALID;
+    perror("Received packet is not SYN_ACK");
+    return -1;
+  } /* received packet is SYN_ACK */
+
+  if (sendto(socket->sd, &ack_packet, sizeof(ack_packet), 0, address, address_len) == -1) {
+    socket->state = INVALID;
+    perror("Failed to send ACK packet");
+    return -1;
+  } /* ACK packet sent */
+
+  /* assume connection was accepted */
+  socket->state = ESTABLISHED;
+  socket->seq_number = ack_packet.seq_number;
+  socket->ack_number = ack_packet.ack_number;
+  /* initialize receive buffer */
+  socket->recvbuf = malloc(MICROTCP_RECVBUF_LEN);
+  return 0;
 }
 
 int
 microtcp_accept (microtcp_sock_t *socket, struct sockaddr *address,
                  socklen_t address_len)
 {
-  /* Your code here */
+  /* Your code here (phase 1) */
 }
 
 int
 microtcp_shutdown (microtcp_sock_t *socket, int how)
 {
-  /* Your code here */
+  /* Your code here (phase 1) */
 }
 
 ssize_t
 microtcp_send (microtcp_sock_t *socket, const void *buffer, size_t length,
                int flags)
 {
-  /* Your code here */
+  /* Your code here (phase 2) */
 }
 
 ssize_t
 microtcp_recv (microtcp_sock_t *socket, void *buffer, size_t length, int flags)
 {
-  /* Your code here */
+  /* Your code here (phase 2) */
 }
