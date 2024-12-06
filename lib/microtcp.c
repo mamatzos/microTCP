@@ -85,7 +85,24 @@ microtcp_connect (microtcp_sock_t *socket, const struct sockaddr *address,
     socket->state = INVALID;
     perror("Failed to send SYN packet");
     return -1;
-  }
+  } /* SYN packet sent */
+
+  /* wait for SYN-ACK packet */
+  microtcp_header_t syn_ack_packet;
+  if (recvfrom(socket->sd, &syn_ack_packet, sizeof(syn_ack_packet), 0, address, &address_len) == -1) {
+    socket->state = INVALID;
+    perror("Failed to receive SYN-ACK packet");
+    return -1;
+  } /* SYN-ACK packet received */
+
+  /* check the received SYN-ACK packet with checksum */
+  syn_ack_packet.checksum = crc32((uint8_t *)&syn_ack_packet, sizeof(syn_ack_packet));
+  if (syn_ack_packet.checksum != syn_ack_packet.checksum) {
+    socket->state = INVALID;
+    perror("Checksum error on SYN-ACK packet");
+    return -1;
+  } /* checksum is correct */
+
 }
 
 int
