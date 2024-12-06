@@ -58,6 +58,7 @@ microtcp_bind (microtcp_sock_t *socket, const struct sockaddr *address,
 {
   /* assign the given address to the socket */
   if (bind(socket->sd, address, address_len) == -1) {
+    socket->state = INVALID;
     perror("Failed to bind address to the socket");
     return -1;
   }
@@ -68,7 +69,23 @@ int
 microtcp_connect (microtcp_sock_t *socket, const struct sockaddr *address,
                   socklen_t address_len)
 {
-  /* Your code here */
+  /* create and send SYN packet */
+  microtcp_header_t syn_packet;
+  syn_packet.seq_number =   rand(time(NULL)) % 1000; /* random seq number */
+  syn_packet.ack_number =   0;
+  syn_packet.control =      MICROTCP_SYN;
+  syn_packet.window =       socket->init_win_size;
+  syn_packet.data_len =     0;
+  syn_packet.future_use0 =  0;
+  syn_packet.future_use1 =  0;
+  syn_packet.future_use2 =  0;  
+  syn_packet.checksum = crc32((uint8_t *)&syn_packet, sizeof(syn_packet));
+
+  if (sendto(socket->sd, &syn_packet, sizeof(syn_packet), 0, address, address_len) == -1) {
+    socket->state = INVALID;
+    perror("Failed to send SYN packet");
+    return -1;
+  }
 }
 
 int
