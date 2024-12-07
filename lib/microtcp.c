@@ -74,7 +74,7 @@ microtcp_connect (microtcp_sock_t *socket, const struct sockaddr *address,
   syn_packet.seq_number =   rand(time(NULL)) % 1000; /* random seq number */
   syn_packet.ack_number =   0;
   syn_packet.control =      MICROTCP_SYN;
-  syn_packet.window =       socket->init_win_size;
+  syn_packet.window =       socket->curr_win_size;
   syn_packet.data_len =     0;
   syn_packet.future_use0 =  0;
   syn_packet.future_use1 =  0;
@@ -129,18 +129,77 @@ microtcp_connect (microtcp_sock_t *socket, const struct sockaddr *address,
 
   /* assume connection was accepted */
   socket->state = ESTABLISHED;
-  socket->seq_number = ack_packet.seq_number;
-  socket->ack_number = ack_packet.ack_number;
   /* initialize receive buffer */
   socket->recvbuf = malloc(MICROTCP_RECVBUF_LEN);
-  return 0;
+  
+  return socket->sd; /* return the socket descriptor */
 }
 
 int
 microtcp_accept (microtcp_sock_t *socket, struct sockaddr *address,
                  socklen_t address_len)
 {
-  /* Your code here (phase 1) */
+  /* wait for SYN packet */
+  microtcp_header_t syn_packet;
+  if (recvfrom(socket->sd, &syn_packet, sizeof(syn_packet), 0, address, &address_len) == -1) {
+    socket->state = INVALID;
+    perror("Failed to receive SYN packet");
+    return -1;
+  } /* SYN packet received */
+
+  /* create and send SYN-ACK packet */
+  microtcp_header_t syn_ack_packet;
+  syn_ack_packet.seq_number =   rand(time(NULL)) % 1000; /* random seq number */
+  syn_ack_packet.ack_number =   syn_packet.seq_number + 1;
+  syn_ack_packet.control =      MICROTCP_SYN_ACK;
+  syn_ack_packet.window =       socket->curr_win_size;
+  syn_ack_packet.data_len =     0;
+  syn_ack_packet.future_use0 =  0;
+  syn_ack_packet.future_use1 =  0;
+  syn_ack_packet.future_use2 =  0;
+  syn_ack_packet.checksum = crc32((uint8_t *)&syn_ack_packet, sizeof(syn_ack_packet));
+
+  /* first compare checksums */
+  if (syn_ack_packet.checksum != syn_packet.checksum) {
+    socket->state = INVALID;
+    perror("SYN SYN_ACK checksums mismatch");
+    return -1;
+  } /* checksums match */
+
+  /* ensure received packet is SYN */
+  if (syn_packet.control != MICROTCP_SYN) {
+    socket->state = INVALID;
+    perror("Received packet is not SYN");
+    return -1;
+  } /* received packet is SYN */
+
+  if (sendto(socket->sd, &syn_ack_packet, sizeof(syn_ack_packet), 0, address, address_len) == -1) {
+    socket->state = INVALID;
+    perror("Failed to send SYN-ACK packet");
+    return -1;
+  } /* SYN-ACK packet sent */
+
+  /* wait for ACK packet */
+  microtcp_header_t ack_packet;
+  if (recvfrom(socket->sd, &ack_packet, sizeof(ack_packet), 0, address, &address_len) == -1) {
+    socket->state = INVALID;
+    perror("Failed to receive ACK packet");
+    return -1;
+  } /* ACK packet received */
+
+  /* ensure received packet is ACK */
+  if (ack_packet.control != MICROTCP_ACK) {
+    socket->state = INVALID;
+    perror("Received packet is not ACK");
+    return -1;
+  } /* received packet is ACK */
+
+  /* accepting connection */
+  socket->state = ESTABLISHED;
+  socket->seq_number = ack_packet.ack_number;
+  socket->ack_number = ack_packet.seq_number + 1; 
+
+  return socket->sd; /* return the new socket descriptor */
 }
 
 int
