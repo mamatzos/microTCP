@@ -37,7 +37,13 @@ TO KNOW (for examination)
     -socket-recbuf: initialized in the establishment of connection.
     initialized with malloc of the defined buffer length.
 
+    -init server's addr with given address (from arguments)
+
 ~ accept()      (operation / return)
+    -init client's addr with given address (from arguments)
+
+~ shutdown()    (operation / return)
+    maybe 
     
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -60,6 +66,10 @@ NOTES:
 
 ~ HEADER
     a. added a definition for control bits    ### ask in exam if sequence is correct
+
+    b. added extra fields in socket about client and server address. To be initialized
+    in connect() and accept() (server addr initialized in connect() and client's in 
+    accept()). 
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
