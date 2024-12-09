@@ -7,9 +7,9 @@ TIMELINE                                        EVENT               STATUS
 
 3. Establish a connection,                      microtcp_connect()  DONE
 
-4. Accept the incoming connection,              microtcp_accept()   weekend
+4. Accept the incoming connection,              microtcp_accept()   DONE
 
-5. Close the established connection,            microtcp_shutdown() weekend
+5. Close the established connection,            microtcp_shutdown() TODAY
 
 6. Bandwidth testing                            bandwidth_test()    monday
 
