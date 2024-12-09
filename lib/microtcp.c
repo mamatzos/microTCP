@@ -47,6 +47,8 @@ microtcp_socket (int domain, int type, int protocol)
   socket.bytes_send =       0;
   socket.bytes_received =   0;
   socket.bytes_lost =       0; 
+  socket.client_addr =      NULL; 
+  socket.server_addr =      NULL; 
   /* fields initialized with 0 or NULL are negotiated on connection */ 
 
   return socket; /* return the valid socket */
@@ -69,6 +71,8 @@ int
 microtcp_connect (microtcp_sock_t *socket, const struct sockaddr *address,
                   socklen_t address_len)
 {
+  /* assign server address value */
+  socket->server_addr = address;
   /* create and send SYN packet */
   microtcp_header_t syn_packet;
   syn_packet.seq_number =   rand(time(NULL)) % 1000; /* random seq number */
@@ -139,6 +143,8 @@ int
 microtcp_accept (microtcp_sock_t *socket, struct sockaddr *address,
                  socklen_t address_len)
 {
+  /* assign client address value */
+  socket->client_addr = address;
   /* wait for SYN packet */
   microtcp_header_t syn_packet;
   if (recvfrom(socket->sd, &syn_packet, sizeof(syn_packet), 0, address, &address_len) == -1) {
@@ -205,7 +211,29 @@ microtcp_accept (microtcp_sock_t *socket, struct sockaddr *address,
 int
 microtcp_shutdown (microtcp_sock_t *socket, int how)
 {
-  /* Your code here (phase 1) */
+  /* client send a FIN packet to shutdown the connection */
+  microtcp_header_t client_fin_packet;
+  client_fin_packet.seq_number =   socket->seq_number;
+  client_fin_packet.ack_number =   socket->ack_number;
+  client_fin_packet.control =      MICROTCP_FIN;
+  client_fin_packet.window =       socket->curr_win_size;
+  client_fin_packet.data_len =     0;
+  client_fin_packet.future_use0 =  0;
+  client_fin_packet.future_use1 =  0;
+  client_fin_packet.future_use2 =  0;
+  client_fin_packet.checksum = crc32((uint8_t *)&client_fin_packet, sizeof(client_fin_packet));
+
+  if (sendto(socket->sd, &client_fin_packet, sizeof(client_fin_packet), 0, socket->server_addr, sizeof(socket->server_addr)) == -1) {
+    socket->state = INVALID;
+    perror("Client failed to send FIN packet");
+    return -1;
+  } /* FIN packet sent */
+
+  /* server send a response to client FIN packet */
+  
+
+    
+  
 }
 
 ssize_t
