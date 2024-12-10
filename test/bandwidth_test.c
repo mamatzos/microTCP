@@ -205,7 +205,7 @@ int server_microtcp(uint16_t listen_port, const char *file)
     }
 
     // Wait for a connection
-    if (microtcp_accept(&server_socket, &client_socket) == -1) {
+    if (microtcp_accept(&server_socket, &client_socket, sizeof(client_socket)) == -1) {
         perror("microTCP accept failed");
         free(buffer);
         fclose(fp);
