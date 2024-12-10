@@ -95,8 +95,8 @@ typedef struct
   uint64_t bytes_received;
   uint64_t bytes_lost;
   /* added fields */
-  struct sockaddr *client_addr; /**< The address of the connected peer */
-  struct sockaddr *server_addr; /**< The address of the server */
+  const struct sockaddr *client_addr; /**< The address of the connected peer */
+  const struct sockaddr *server_addr; /**< The address of the server */
   
 } microtcp_sock_t;
 
