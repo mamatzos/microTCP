@@ -9,7 +9,7 @@ TIMELINE                                        EVENT               STATUS
 
 4. Accept the incoming connection,              microtcp_accept()   DONE
 
-5. Close the established connection,            microtcp_shutdown() TODAY
+5. Close the established connection,            microtcp_shutdown() DONE
 
 6. Bandwidth testing                            bandwidth_test()    monday
 
@@ -50,17 +50,30 @@ TO KNOW (for examination)
 NOTES:
     NOTES FOR CONNECT()
         a. create a packet (SYN) to be sent as 1st handshake
-        b. send 1st handshake                                       (SYN)
-        c. wait for 2nd handshake and check it                      (SYN-ACK)
-        d. if 2nd is ok create 3rd handshake and send it            (ACK)
+        b. send 1st handshake                                        (SYN)
+        c. wait for 2nd handshake and check it                       (SYN-ACK)
+        d. if 2nd is ok create 3rd handshake and send it             (ACK)
         e. assume connection established
 
     NOTES FOR ACCEPT()
         a. create the packet, about to be received (1st)
-        b. receive 1st handshake (sent from client) and check it      (SYN)
-        c. if 1st handshake is ok then we create 2nd handshake        (SYN-ACK) 
-        d. check 3rd handshake received from client                   (ACK)
+        b. receive 1st handshake (sent from client) and check it     (SYN)
+        c. if 1st handshake is ok then we create 2nd handshake       (SYN-ACK) 
+        d. check 3rd handshake received from client                  (ACK)
         e. connection established...
+    
+    NOTES FOR SHUTDOWN()
+        a. create clients FIN packet and send it                     (FIN)
+        b. server received it and validate it is FIN
+        c. server sends ACK and sets state as CLOSING_BY_PEER        (ACK)
+            !! server does not increase ACK value because it
+            doesn't expect more data before sending a FIN
+        d. client receive ACK and sets state as CLOSING_BY_HOST
+        e. server sends a FIN packet to client                       (FIN)
+        f. client receives FIN, validates its a FIN
+        g. client creates and send an ACK                            (ACK)
+        h. SOCKET CLOSED
+
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
