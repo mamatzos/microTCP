@@ -181,7 +181,9 @@ int server_microtcp(uint16_t listen_port, const char *file)
     }
 
     // Initialize microTCP socket
-    if (microtcp_socket(&server_socket, AF_INET, SOCK_DGRAM, 0) == -1) {
+    microtcp_sock_t new_socket_test;
+    new_socket_test = microtcp_socket(AF_INET, SOCK_DGRAM, 0);
+    if ( new_socket_test.sd== -1) {
         perror("microTCP socket initialization failed");
         free(buffer);
         fclose(fp);
