@@ -156,118 +156,11 @@ server_tcp (uint16_t listen_port, const char *file)
   return 0;
 }
 
-
-int
-server_microtcp(uint16_t listen_port, const char *file)
+int server_microtcp(uint16_t listen_port, const char *file)
 {
-	microtcp_sock_t socket;
-	uint8_t *buffer;
-	FILE *fp;
-
-	int accepted;
-	int received;
-	ssize_t written;
-	ssize_t total_bytes = 0;
-	socklen_t client_addr_len;
-
-	struct sockaddr_in sin;
-	struct sockaddr client_addr;
-	struct timespec start_time;
-	struct timespec end_time;
-
-	
-
-	/* Allocate memory for the application receive buffer */
-	buffer = (uint8_t *)malloc(CHUNK_SIZE);
-	if(!buffer){
-		perror("Allocate application receive buffer");
-		exit(EXIT_FAILURE);
-	}
-
-	/* Open the file for writing the data from the network */
-	fp = fopen(file, "wb");
-	if(!fp){
-		perror("Open file for writing");
-		free(buffer);
-		exit(EXIT_FAILURE);
-	}
-	socket = microtcp_socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
-	if (socket.state == INVALID){
-		perror("Opening microTCP socket");
-		free(buffer);
-		fclose(fp);
-		exit(EXIT_FAILURE);
-	}
-
-	memset(&sin, 0, sizeof(struct sockaddr_in));
-	sin.sin_family = AF_INET;
-	sin.sin_port = htons(listen_port);
-	/* Bind to all available network interfaces */
-	sin.sin_addr.s_addr = INADDR_ANY;
-
-	if (microtcp_bind(socket, (struct sockaddr *) &sin, sizeof(struct sockaddr_in)) <0) {
-		perror("microTCP bind");
-		free(buffer);
-		fclose(fp);
-		exit(EXIT_FAILURE);
-	}
-
-	/* Accept a connection from the client */
-	client_addr_len = sizeof(struct sockaddr);
-
-
-	socket = microtcp_accept(socket, &client_addr, client_addr_len);
-	if(socket.state!=ESTABLISHED){
-		perror("microTCP accept");
-		free(buffer);
-		fclose(fp);
-		exit(EXIT_FAILURE);
-	}
-	printf("\nmicroTCP Server - 3way handshake Success!\n");
-	
-	socket=saveAddr(socket,sin);
-	
-	printf("\nmicroTCP Server - ?ime to receive data!\n");
-	clock_gettime(CLOCK_MONOTONIC_RAW, &start_time);
-	while((received = microtcp_recv(&socket, buffer, CHUNK_SIZE, 0)) > 0){
-		written = fwrite(buffer, sizeof(uint8_t), received, fp);
-		total_bytes += received;
-		if(written * sizeof(uint8_t) != received){
-			printf("Failed to write to the file the"
-			       " amount of data received from the network.OR FINACK\n");
-			break;
-		}
-		if(socket.state==CLOSING_BY_PEER){
-			break;
-		}
-	}
-	clock_gettime(CLOCK_MONOTONIC_RAW, &end_time);
-	print_statistics(total_bytes, start_time, end_time);
-	printf("\nmicroTCP Server - Data received!\n");
-	printf("\nmicroTCP Server - Time to terminate connection!\n");
-	
-	/*
-	 * Wait for FINACK message from client side.All this code will be at recv()
-	 */
-		//kane recv kai an pareis pisw -1 kai CLOSED BY BLABLA BLA KALESE SHUTDOWN, alliws yolo
-			socket=microtcp_shutdown(socket,0);
-			if(socket.state!=CLOSED){
-				perror("microTCP Server termination");
-				free(buffer);
-				fclose(fp);
-				exit(EXIT_FAILURE);
-			}
-			printf("\nmicroTCP Server - Termination Success!\n");
-		
-
-	
-	
-	fclose(fp);
-	free(buffer);
-	return 0;
+    /* TODO */
+    return 0;
 }
-
-
 
 
 int
@@ -353,89 +246,14 @@ client_tcp (const char *serverip, uint16_t server_port, const char *file)
 }
 
 
-int
-client_microtcp(const char *serverip, uint16_t server_port, const char *file)
+
+int client_microtcp(const char *serverip, uint16_t server_port, const char *file)
 {
-	uint8_t *buffer;
-	microtcp_sock_t socket;
-
-	socklen_t client_addr_len;
-	FILE *fp;
-	size_t read_items = 0;
-	ssize_t data_sent;
-	long fSize;
-	struct sockaddr *client_addr;
-	int i; 
-	
-	/* Allocate memory for the application receive buffer */
-	buffer = (uint8_t *)malloc(CHUNK_SIZE);
-	if(!buffer){
-		perror("Allocate application receive buffer");
-		exit(EXIT_FAILURE);
-	}
-
-
-	/* Open the file for writing the data from the network */
-	fp = fopen(file, "r");
-	if(!fp){
-		perror("Open file for reading");
-		free(buffer);
-		exit(EXIT_FAILURE);
-	}
-
-	socket = microtcp_socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
-	if (socket.state == INVALID){
-		perror("Opening microTCP socket");
-		free(buffer);
-		fclose(fp);
-		exit(EXIT_FAILURE);
-	}
-
-	struct sockaddr_in sin;
-	memset(&sin, 0, sizeof(struct sockaddr_in));
-	sin.sin_family = AF_INET;
-	/*Port that server listens at */
-	sin.sin_port = htons(server_port);
-	/* The server's IP*/
-	sin.sin_addr.s_addr = inet_addr(serverip);
-
-	socket=microtcp_connect(socket,(struct sockaddr *) &sin, sizeof(struct sockaddr_in));
-	if(socket.state==INVALID){
-		perror("microTCP connect");
-		exit(EXIT_FAILURE);
-	}
-
-	printf("\nmicroTCP Client: 3way handshake success!\n");
-		
-	socket=saveAddr(socket,sin);
-	printf("microTCP Client: Sending data\n");
-	while(!feof(fp)){
-		read_items = fread(buffer, sizeof(uint8_t), CHUNK_SIZE, fp);
-		if(read_items <1 && errno != EAGAIN){
-			perror("microTCP Client: Failed read from file");
-			break;
-		}
-		data_sent = microtcp_send(&socket, buffer, read_items* sizeof(uint8_t),0);
-		if(data_sent != read_items* sizeof(uint8_t)){
-			printf("microTCP  Client: Failed to send data\n");
-			break;
-		}
-	}	
-	//Termination start
-	printf("microTCP Client: Terminating Connection\n");
-	socket=microtcp_shutdown(socket,0);
-	if(socket.state!=CLOSED){
-				perror("microTCP Client termination");
-				free(buffer);
-				fclose(fp);
-				exit(EXIT_FAILURE);
-			}
-			printf("microTCP Client: Termination success!\n");
-	
-	free(buffer);
-	fclose(fp);
-	return 0;
+    /* TODO */
+    return 0;
+    
 }
+
 int
 main (int argc, char **argv)
 {
