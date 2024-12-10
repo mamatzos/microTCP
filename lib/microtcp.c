@@ -74,8 +74,9 @@ microtcp_connect (microtcp_sock_t *socket, const struct sockaddr *address,
   /* assign server address value */
   socket->server_addr = address;
   /* create and send SYN packet */
+  srand(time(NULL));
   microtcp_header_t syn_packet;
-  syn_packet.seq_number =   rand(time(NULL)) % 1000; /* random seq number */
+  syn_packet.seq_number =   rand() % 1000; /* random seq number */
   syn_packet.ack_number =   0;
   syn_packet.control =      MICROTCP_SYN;
   syn_packet.window =       socket->curr_win_size;
@@ -154,8 +155,9 @@ microtcp_accept (microtcp_sock_t *socket, struct sockaddr *address,
   } /* SYN packet received */
 
   /* create and send SYN-ACK packet */
+  srand(time(NULL));
   microtcp_header_t syn_ack_packet;
-  syn_ack_packet.seq_number =   rand(time(NULL)) % 1000; /* random seq number */
+  syn_ack_packet.seq_number =   rand() % 1000; /* random seq number */
   syn_ack_packet.ack_number =   syn_packet.seq_number + 1;
   syn_ack_packet.control =      MICROTCP_SYN_ACK;
   syn_ack_packet.window =       socket->curr_win_size;
@@ -295,7 +297,7 @@ microtcp_shutdown (microtcp_sock_t *socket, int how)
 
   /* server executes any opperations left and sends a FIN packet to the client */
   free(socket->recvbuf);
-  
+
   microtcp_header_t server_fin_packet;
   server_fin_packet.seq_number =   server_ack_packet.seq_number;
   server_fin_packet.ack_number =   server_ack_packet.ack_number + 1;
