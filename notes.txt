@@ -11,23 +11,17 @@ TIMELINE                                        EVENT               STATUS
 
 5. Close the established connection,            microtcp_shutdown() DONE
 
-6. Bandwidth testing                            bandwidth_test()    monday
+6. Bandwidth testing                            bandwidth_test()    TODAY
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 TO KNOW (for examination)
 ~ LEARN EACH ARGUMENT's OPERATION (all functions)
 
-~ socket()      (operation / return)
-~ microtcp_sock_t fields && initialized values (why / reason)
-
-~ bind()        (operation / return)    
-
-~ connect()     (operation / return)
     -the casting to uint8_t is done because thats the required type
 
     -sendto(): if address is wrong then it returns -1, else if all good
-    the size (in bytes) of the packet that is about to be sent is returned
+    the size (in bytes) of the packet that is about to be sent is returned,
     at first the size is 0 thats why we use it for error checking olny.
 
     -recvfrom(): blocks the flow of the program until the data reached the
@@ -36,19 +30,13 @@ TO KNOW (for examination)
 
     -socket-recbuf: initialized in the establishment of connection.
     initialized with malloc of the defined buffer length.
-
-    -init server's addr with given address (from arguments)
-
-~ accept()      (operation / return)
-    -init client's addr with given address (from arguments)
-
-~ shutdown()    (operation / return)
-    maybe 
     
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 NOTES:
     NOTES FOR CONNECT()
+        FIRST -> init server's addr with given address (from arguments)
+        
         a. create a packet (SYN) to be sent as 1st handshake
         b. send 1st handshake                                        (SYN)
         c. wait for 2nd handshake and check it                       (SYN-ACK)
@@ -56,6 +44,8 @@ NOTES:
         e. assume connection established
 
     NOTES FOR ACCEPT()
+        FIRST -> init client's addr with given address (from arguments)
+        
         a. create the packet, about to be received (1st)
         b. receive 1st handshake (sent from client) and check it     (SYN)
         c. if 1st handshake is ok then we create 2nd handshake       (SYN-ACK) 
@@ -74,7 +64,6 @@ NOTES:
         g. client creates and send an ACK                            (ACK)
         h. SOCKET CLOSED
 
-
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 ~ HEADER
@@ -86,28 +75,6 @@ NOTES:
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-USEFUL INFO
-SEGMENT --> Bytes
-WINDOW  --> Bytes
-
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
 ~> SEND AND RECEIVE PACKET NEXT PHASE
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-~~~~~ NOTES FOR TODAY ~~~~~
-
-FLAGS:
-ACK bit -> 1 ektos an eina proto packet
-
-RST bit -> if 1: connection reset 
-
-SYN bit -> Syncr seq numbers, declares connections initiate 
-    only once for each side of the connection on first packet / otherwise 0
-
-FIN bit -> terminates connection
-
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-CODE DUMP
