@@ -24,34 +24,34 @@
 microtcp_sock_t
 microtcp_socket (int domain, int type, int protocol)
 {
-  microtcp_sock_t socket;
-  socket.sd = socket(domain, type, protocol);
-  if (socket.sd == -1) { /* socket returned invalid */
-    socket.state = INVALID;
+  microtcp_sock_t new_socket;
+  new_socket.sd = socket(domain, type, protocol);
+  if (new_socket.sd == -1) { /* socket returned invalid */
+    new_socket.state = INVALID;
     perror("Failed to create the socket");
-    return socket; /* return the invalid socket */
+    return new_socket; /* return the invalid socket */
   }
   /* else init the socket fields */ 
-  socket.state =          LISTEN; /* waitfor incoming connections */ 
-  socket.init_win_size =  MICROTCP_WIN_SIZE; /* full window usage */ 
-  socket.curr_win_size =  MICROTCP_WIN_SIZE;
-  socket.recvbuf =        NULL;
-  socket.buf_fill_level =   0;
-  socket.cwnd =           MICROTCP_INIT_CWND; /* congestion window */ 
-  socket.ssthresh =       MICROTCP_INIT_SSTHRESH; /* slow start th */ 
-  socket.seq_number =       0;
-  socket.ack_number =       0;
-  socket.packets_send =     0;
-  socket.packets_received = 0;
-  socket.packets_lost =     0;
-  socket.bytes_send =       0;
-  socket.bytes_received =   0;
-  socket.bytes_lost =       0; 
-  socket.client_addr =      NULL; 
-  socket.server_addr =      NULL; 
+  new_socket.state =          LISTEN; /* waitfor incoming connections */ 
+  new_socket.init_win_size =  MICROTCP_WIN_SIZE; /* full window usage */ 
+  new_socket.curr_win_size =  MICROTCP_WIN_SIZE;
+  new_socket.recvbuf =        NULL;
+  new_socket.buf_fill_level =   0;
+  new_socket.cwnd =           MICROTCP_INIT_CWND; /* congestion window */ 
+  new_socket.ssthresh =       MICROTCP_INIT_SSTHRESH; /* slow start th */ 
+  new_socket.seq_number =       0;
+  new_socket.ack_number =       0;
+  new_socket.packets_send =     0;
+  new_socket.packets_received = 0;
+  new_socket.packets_lost =     0;
+  new_socket.bytes_send =       0;
+  new_socket.bytes_received =   0;
+  new_socket.bytes_lost =       0; 
+  new_socket.client_addr =      NULL; 
+  new_socket.server_addr =      NULL; 
   /* fields initialized with 0 or NULL are negotiated on connection */ 
 
-  return socket; /* return the valid socket */
+  return new_socket; /* return the valid socket */
 }
 
 int
