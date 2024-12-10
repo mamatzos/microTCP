@@ -211,7 +211,7 @@ microtcp_accept (microtcp_sock_t *socket, struct sockaddr *address,
 int
 microtcp_shutdown (microtcp_sock_t *socket, int how)
 {
-  /* client send a FIN packet to shutdown the connection */
+  /* client send a FIN packet to initiate connection shutdown */
   microtcp_header_t client_fin_packet;
   client_fin_packet.seq_number =   socket->seq_number;
   client_fin_packet.ack_number =   socket->ack_number;
@@ -227,13 +227,141 @@ microtcp_shutdown (microtcp_sock_t *socket, int how)
     socket->state = INVALID;
     perror("Client failed to send FIN packet");
     return -1;
-  } /* FIN packet sent */
+  } /* client FIN packet sent */
 
-  /* server send a response to client FIN packet */
-  
+  /* server receive the FIN packet */
+  microtcp_header_t received_client_fin_packet;
+  if (recvfrom(socket->sd, &received_client_fin_packet, sizeof(received_client_fin_packet), 0, socket->client_addr, sizeof(socket->client_addr)) == -1) {
+    socket->state = INVALID;
+    perror("Server failed to receive FIN packet");
+    return -1;
+  } /* client FIN packet received */
 
-    
+  /* ensure received packet is FIN */
+  if (received_client_fin_packet.control != MICROTCP_FIN) {
+    socket->state = INVALID;
+    perror("Received packet is not FIN");
+    return -1;
+  } /* received packet is FIN */
+
+  /* server respond to client FIN packet with an ACK */
+  microtcp_header_t server_ack_packet;
+  server_ack_packet.seq_number =   received_client_fin_packet.ack_number;
+  server_ack_packet.ack_number =   received_client_fin_packet.seq_number;
+  server_ack_packet.control =      MICROTCP_ACK;
+  server_ack_packet.window =       socket->curr_win_size;
+  server_ack_packet.data_len =     0;
+  server_ack_packet.future_use0 =  0;
+  server_ack_packet.future_use1 =  0;
+  server_ack_packet.future_use2 =  0;
+  server_ack_packet.checksum = crc32((uint8_t *)&server_ack_packet, sizeof(server_ack_packet));
+
+  /* first compare checksums */
+  if (server_ack_packet.checksum != received_client_fin_packet.checksum) {
+    socket->state = INVALID;
+    perror("FIN ACK checksums mismatch");
+    return -1;
+  } /* checksums match */
+
+  if (sendto(socket->sd, &server_ack_packet, sizeof(server_ack_packet), 0, socket->client_addr, sizeof(socket->client_addr)) == -1) {
+    socket->state = INVALID;
+    perror("Server failed to send ACK packet");
+    return -1;
+  } /* server ACK packet sent */
+  socket->state = CLOSING_BY_PEER;
+
+  /* client receive the ACK packet */
+  microtcp_header_t received_server_ack_packet;
+  if (recvfrom(socket->sd, &received_server_ack_packet, sizeof(received_server_ack_packet), 0, socket->server_addr, sizeof(socket->server_addr)) == -1) {
+    socket->state = INVALID;
+    perror("Client failed to receive ACK packet");
+    return -1;
+  } /* server ACK packet received */
+
+  /* ensure received packet is ACK */
+  if (received_server_ack_packet.control != MICROTCP_ACK) {
+    socket->state = INVALID;
+    perror("Received packet is not ACK");
+    return -1;
+  } /* received packet is ACK */
+
+  /* first compare checksums */
+  if (received_server_ack_packet.checksum != server_ack_packet.checksum) {
+    socket->state = INVALID;
+    perror("ACK checksums mismatch");
+    return -1;
+  } /* checksums match */
+  socket->state = CLOSING_BY_HOST;
+
+  /* server executes any opperations left and sends a FIN packet to the client */
+  free(socket->recvbuf);
   
+  microtcp_header_t server_fin_packet;
+  server_fin_packet.seq_number =   server_ack_packet.seq_number;
+  server_fin_packet.ack_number =   server_ack_packet.ack_number + 1;
+  server_fin_packet.control =      MICROTCP_FIN;
+  server_fin_packet.window =       socket->curr_win_size;
+  server_fin_packet.data_len =     0;
+  server_fin_packet.future_use0 =  0;
+  server_fin_packet.future_use1 =  0;
+  server_fin_packet.future_use2 =  0;
+  server_fin_packet.checksum = crc32((uint8_t *)&server_fin_packet, sizeof(server_fin_packet));
+
+  if (sendto(socket->sd, &server_fin_packet, sizeof(server_fin_packet), 0, socket->client_addr, sizeof(socket->client_addr)) == -1) {
+    socket->state = INVALID;
+    perror("Server failed to send FIN packet");
+    return -1;
+  } /* server FIN packet sent */
+
+  /* client receive the server FIN packet */
+  microtcp_header_t received_server_fin_packet;
+  if (recvfrom(socket->sd, &received_server_fin_packet, sizeof(received_server_fin_packet), 0, socket->server_addr, sizeof(socket->server_addr)) == -1) {
+    socket->state = INVALID;
+    perror("Client failed to receive FIN packet");
+    return -1;
+  } /* server FIN packet received */
+
+  /* ensure received packet is FIN */
+  if (received_server_fin_packet.control != MICROTCP_FIN) {
+    socket->state = INVALID;
+    perror("Received packet is not FIN");
+    return -1;
+  } /* received packet is FIN */
+
+  /* first compare checksums */
+  if (received_server_fin_packet.checksum != server_fin_packet.checksum) {
+    socket->state = INVALID;
+    perror("FIN checksums mismatch");
+    return -1;
+  } /* checksums match */
+
+  /* client respond to server FIN packet with an ACK */
+  microtcp_header_t client_ack_packet;
+  client_ack_packet.seq_number =   received_server_fin_packet.ack_number;
+  client_ack_packet.ack_number =   received_server_fin_packet.seq_number + 1;
+  client_ack_packet.control =      MICROTCP_ACK;
+  client_ack_packet.window =       socket->curr_win_size;
+  client_ack_packet.data_len =     0;
+  client_ack_packet.future_use0 =  0;
+  client_ack_packet.future_use1 =  0;
+  client_ack_packet.future_use2 =  0;
+  client_ack_packet.checksum = crc32((uint8_t *)&client_ack_packet, sizeof(client_ack_packet));
+
+  /* first compare checksums */
+  if (client_ack_packet.checksum != received_server_fin_packet.checksum) {
+    socket->state = INVALID;
+    perror("FIN ACK checksums mismatch");
+    return -1;
+  } /* checksums match */
+
+  if (sendto(socket->sd, &client_ack_packet, sizeof(client_ack_packet), 0, socket->server_addr, sizeof(socket->server_addr)) == -1) {
+    socket->state = INVALID;
+    perror("Client failed to send ACK packet");
+    return -1;
+  } /* client ACK packet sent */
+  socket->state = CLOSED;
+
+  return 0;
 }
 
 ssize_t

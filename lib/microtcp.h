@@ -45,7 +45,6 @@
 #define MICROTCP_ACK      8   /* 0000000000001000 */
 #define MICROTCP_SYN_ACK  10  /* 0000000000001010 */
 #define MICROTCP_FIN      1   /* 0000000000000001 */
-#define MICROTCP_FIN_ACK  9   /* 0000000000001001 */
 
 /**
  * Possible states of the microTCP socket
