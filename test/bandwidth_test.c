@@ -48,6 +48,7 @@ print_statistics (ssize_t received, struct timespec start, struct timespec end)
   printf ("Throughput achieved: %f MB/s\n", megabytes / elapsed);
 }
 
+
 int
 server_tcp (uint16_t listen_port, const char *file)
 {
@@ -79,7 +80,7 @@ server_tcp (uint16_t listen_port, const char *file)
     free (buffer);
     return -EXIT_FAILURE;
   }
-
+  
   if ((sock = socket (AF_INET, SOCK_STREAM, IPPROTO_TCP)) == -1) {
     perror ("Opening TCP socket");
     free (buffer);
@@ -156,10 +157,84 @@ server_tcp (uint16_t listen_port, const char *file)
   return 0;
 }
 
+
 int server_microtcp(uint16_t listen_port, const char *file)
 {
-    /* TODO */
-    return 0;
+  uint8_t *buffer;
+  FILE *fp;
+  microtcp_sock_t sock;
+  int sock_sd;
+  int accepted;
+  int received;
+  ssize_t written;
+  ssize_t total_bytes = 0;
+  socklen_t client_addr_len;
+
+  struct sockaddr_in sin;
+  struct sockaddr client_addr;
+  struct timespec start_time;
+  struct timespec end_time;
+
+  /* allocate memory for the application receive buffer */
+  buffer = (uint8_t *) malloc (CHUNK_SIZE);
+  if (!buffer) {
+    perror ("Allocate application receive buffer");
+    return -EXIT_FAILURE;
+  }
+
+  /* open the file for writing the data from the network */
+  fp = fopen (file, "w");
+  if (!fp) {
+    perror ("Open file for writing");
+    free (buffer);
+    return -EXIT_FAILURE;
+  }
+  
+  sock = microtcp_socket (AF_INET, SOCK_DGRAM , IPPROTO_UDP);
+  sock_sd = sock.sd;
+  if (sock_sd == -1) {
+    perror ("Opening microTCP socket");
+    free (buffer);
+    fclose (fp);
+    return -EXIT_FAILURE;
+  }
+
+  memset (&sin, 0, sizeof(struct sockaddr_in));
+  sin.sin_family = AF_INET;
+  sin.sin_port = htons (listen_port);
+  /* bind to all available network interfaces */
+  sin.sin_addr.s_addr = INADDR_ANY;
+
+  if (microtcp_bind (&sock, (struct sockaddr *) &sin, sizeof(struct sockaddr_in)) == -1) {
+    perror ("microTCP bind");
+    free (buffer);
+    fclose (fp);
+    return -EXIT_FAILURE;
+  }
+
+  /* accept a connection from the client */
+  client_addr_len = sizeof(struct sockaddr);
+  accepted = microtcp_accept (&sock, &client_addr, &client_addr_len);
+  if (accepted < 0) {
+    perror ("microTCP accept");
+    free (buffer);
+    fclose (fp);
+    return -EXIT_FAILURE;
+  }
+
+  /* start receiving the data and timer */
+  clock_gettime (CLOCK_MONOTONIC_RAW, &start_time);
+
+  /* TODO (PHASE 2): receiving data... */
+
+  clock_gettime (CLOCK_MONOTONIC_RAW, &end_time);
+  /* data received and proccesed */
+
+  print_statistics (total_bytes, start_time, end_time);
+  free (buffer);
+  fclose (fp);
+  
+  return 0;
 }
 
 
@@ -246,12 +321,67 @@ client_tcp (const char *serverip, uint16_t server_port, const char *file)
 }
 
 
-
 int client_microtcp(const char *serverip, uint16_t server_port, const char *file)
 {
-    /* TODO */
-    return 0;
-    
+  uint8_t *buffer;
+  microtcp_sock_t sock;
+  int sock_sd;
+  socklen_t client_addr_len;
+  FILE *fp;
+  size_t read_items = 0;
+  ssize_t data_sent;
+
+  struct sockaddr *client_addr;
+
+  /* allocate memory for the application receive buffer */
+  buffer = (uint8_t *) malloc (CHUNK_SIZE);
+  if (!buffer) {
+    perror ("Allocate application receive buffer");
+    return -EXIT_FAILURE;
+  }
+
+  /* open the file for reading the data */
+  fp = fopen (file, "r");
+  if (!fp) {
+    perror ("Open file for reading");
+    free (buffer);
+    return -EXIT_FAILURE;
+  }
+
+  sock = microtcp_socket(AF_INET, SOCK_DGRAM , IPPROTO_UDP);
+  sock_sd = sock.sd;
+  if (sock_sd == -1) {
+    perror ("Opening microTCP socket");
+    free (buffer);
+    fclose (fp);
+    return -EXIT_FAILURE;
+  }
+
+  struct sockaddr_in sin;
+  memset (&sin, 0, sizeof(struct sockaddr_in));
+  sin.sin_family = AF_INET;
+  /* port that server listens at */
+  sin.sin_port = htons (server_port);
+  /* the server's IP */
+  sin.sin_addr.s_addr = inet_addr (serverip);
+
+  if (microtcp_connect (&sock, (struct sockaddr *) &sin, sizeof(struct sockaddr_in)) == -1) {
+    perror ("microTCP connect");
+    exit (EXIT_FAILURE);
+  }
+
+  /* start sending the data */
+
+  /* TODO (PHASE 2): sending data... */
+
+  /* data sent */
+
+  printf ("Data sent. Terminating...\n");
+  microtcp_shutdown (&sock, SHUT_RDWR);
+  free (buffer);
+  fclose (fp);
+
+  return 0;  
 }
 
 int
