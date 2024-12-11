@@ -11,7 +11,7 @@ TIMELINE                                        EVENT               STATUS
 
 5. Close the established connection,            microtcp_shutdown() DONE
 
-6. Bandwidth testing                            bandwidth_test()    TODAY
+6. Bandwidth testing                            bandwidth_test()    
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

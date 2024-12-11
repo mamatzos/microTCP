@@ -214,7 +214,7 @@ int server_microtcp(uint16_t listen_port, const char *file)
 
   /* accept a connection from the client */
   client_addr_len = sizeof(struct sockaddr);
-  accepted = microtcp_accept (&sock, &client_addr, &client_addr_len);
+  accepted = microtcp_accept (&sock, &client_addr, client_addr_len);
   if (accepted < 0) {
     perror ("microTCP accept");
     free (buffer);
