@@ -30,7 +30,55 @@ TO KNOW (for examination)
 
     -socket-recbuf: initialized in the establishment of connection.
     initialized with malloc of the defined buffer length.
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+FUNCTIONS:
+
+1. microtcp_socket
+    Arguments:
+        int domain:                      Specifies communication domain (ex IPv4, type of address)
+        int type:                        Type of socket
+        int protocol:                    TCP or UDP
+
+    Operation:
+        Creates a socket and returns the socket.
+
+2. microtcp_bind
+    Arguments:
+        microtcp_sock_t *socket:         given socket
+        const struct sockaddr *address:  given address 
+        socklen_t address_len:           address size
+
+    Operation:
+        Assigns the given address to the socket
+
+3. microtcp_connect
+    Arguments:
+        microtcp_sock_t socket:          given socket
+        const struct sockaddr *address:  server address
+        socklen_t address_len:           server's address size
+
+    Operation:
+        Initializes the 3 way handshake between the server and the client.
+
+4. microtcp_accept
+    Arguments:
+        microtcp_sock_t *socket:         given socket
+        struct sockaddr *address:        client address
+        socklen_t address_len:           client's address size
     
+    Operation:
+        Accepts the connection request (3-way handshake) and initializes the connection
+        from the server's side.
+
+5. microtcp_shutdown
+    Arguments:
+        microtcp_sock_t *socket:      given socket
+        int how:                      the type of shutdown (reads/writes/both, here both)
+
+    Operation:
+        Executes the closing steps of a connection, a sequence of FINs and ACKs. 
+        Sets connection to closed.
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 NOTES:
