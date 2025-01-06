@@ -42,10 +42,10 @@
 /*
  * Added constants for control bits (using bin representation)
  */
+#define MICROTCP_FIN      1   /* 0000000000000001 */
 #define MICROTCP_SYN      2   /* 0000000000000010 */
 #define MICROTCP_ACK      8   /* 0000000000001000 */
 #define MICROTCP_SYN_ACK  10  /* 0000000000001010 */
-#define MICROTCP_FIN      1   /* 0000000000000001 */
 
 /**
  * Possible states of the microTCP socket
