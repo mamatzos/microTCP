@@ -365,14 +365,25 @@ microtcp_shutdown (microtcp_sock_t *socket, int how)
 }
 
 ssize_t
-microtcp_send (microtcp_sock_t *socket, const void *buffer, size_t length,
-               int flags)
+microtcp_send (microtcp_sock_t *socket, const void *buffer, size_t length, int flags)
 {
-  /* your code here (phase 2) */
+  size_t bytes_sent = 0;
+  
+  while (bytes_sent < length) {
+
+  }
+
+  return bytes_sent;
 }
 
 ssize_t
 microtcp_recv (microtcp_sock_t *socket, void *buffer, size_t length, int flags)
 {
-  /* your code here (phase 2) */
+  size_t bytes_recv = 0;
+  
+  while (bytes_recv < length) {
+
+  }
+
+  return bytes_recv;
 }
