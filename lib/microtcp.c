@@ -293,7 +293,7 @@ microtcp_shutdown (microtcp_sock_t *socket, int how)
 
     /* connection is closed */
     socket->state = CLOSED;
-    return 0;
+    return socket->sd; /* return the socket descriptor */
 
   } else if (socket->state == CLOSING_BY_HOST) {
     
@@ -352,9 +352,9 @@ microtcp_shutdown (microtcp_sock_t *socket, int how)
       return -1;
     } /* ACK packet sent */
 
-    /* connection is closed */
+    /* waiting for server to close connection */
 
-
+    return socket->sd; /* return the socket descriptor */
 
   } else {
     /* every other state is not accepted for shutdown */
