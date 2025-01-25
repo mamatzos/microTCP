@@ -116,8 +116,20 @@ Phase B:
     Step 2 ->   shutdown is initiated when microtcp_recv() gets a FIN packet
                & recv() checks EVERY packet if its a FIN.
     
-    Step 3 ->   
+    Step 3 ->   implement send() and recv() with basic checking
 
+    Step 4 ->   add error checking, seq and ack checking, check for inorder packs,
+               (send dup Acks)
+
+    Step 5 ->   check for dup Acks (send() resends last packet), if timeout also
+               resend last packet
+    
+    Step 6 ->   flow control on send() and recv()
+
+    Step 7 ->   congestion control on send()
+
+    Step 8 ->   implement bandwidth()
+    
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 ~ HEADER
@@ -130,5 +142,8 @@ Phase B:
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 ~> SEND AND RECEIVE PACKET NEXT PHASE
+
+    checks on send():
+        1) 
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
