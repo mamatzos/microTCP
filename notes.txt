@@ -147,6 +147,8 @@ Phase B:
 
 ~> SEND AND RECEIVE PACKET NEXT PHASE
 
-    checks on send():
+test_client() and test_server():
+    send() and recv() are working until we finish a file (e.g. txt). If a packet is not 
+    valid we return -1 (inside while) and increment packets lost.
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
