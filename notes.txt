@@ -77,7 +77,10 @@ FUNCTIONS:
         Sets connection to closed.
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-NOTES:
+NOTES
+
+Phase A:
+
     NOTES FOR CONNECT()
         FIRST -> init server's addr with given address (from arguments)
         
@@ -107,6 +110,7 @@ NOTES:
         f. client receives FIN, validates its a FIN
         g. client creates and send an ACK                            (ACK)
         h. SOCKET CLOSED
+
 
 Phase B:
 
@@ -144,6 +148,5 @@ Phase B:
 ~> SEND AND RECEIVE PACKET NEXT PHASE
 
     checks on send():
-        1) 
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
