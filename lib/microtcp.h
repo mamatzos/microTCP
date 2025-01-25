@@ -47,6 +47,9 @@
 #define MICROTCP_ACK      8   /* 0000000000001000 */
 #define MICROTCP_SYN_ACK  10  /* 0000000000001010 */
 
+/* Added macro for min */
+#define min(a, b) ((a) < (b) ? (a) : (b))
+
 /**
  * Possible states of the microTCP socket
  *

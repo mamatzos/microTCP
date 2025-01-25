@@ -367,11 +367,33 @@ microtcp_shutdown (microtcp_sock_t *socket, int how)
 ssize_t
 microtcp_send (microtcp_sock_t *socket, const void *buffer, size_t length, int flags)
 {
-  size_t bytes_sent = 0;
+  /* packet to be sent */
+  microtcp_header_t sending_packet;
   
+  if (!buffer) {
+    perror("Buffer is NULL");
+    return 0; /* nothing to send */
+  }
+
+  /* while the bytes sent are lt the length of the buffer */
+  size_t bytes_sent = 0;
   while (bytes_sent < length) {
 
-  }
+    // send packet
+    
+    // check timeout 
+    
+    // check dup acks    
+
+    if (socket->cwnd <= socket->ssthresh) {
+      /* slow start */
+      socket->cwnd = socket->cwnd * 2;
+    } else if (socket->cwnd > socket->ssthresh) {
+      /* congestion avoidance */
+      socket->cwnd = socket->cwnd + MICROTCP_MSS;
+    } 
+
+  } 
 
   return bytes_sent;
 }
@@ -379,9 +401,12 @@ microtcp_send (microtcp_sock_t *socket, const void *buffer, size_t length, int f
 ssize_t
 microtcp_recv (microtcp_sock_t *socket, void *buffer, size_t length, int flags)
 {
-  size_t bytes_recv = 0;
   
+  /* while the bytes received are lt the length of the buffer */
+  size_t bytes_recv = 0;
   while (bytes_recv < length) {
+
+
 
   }
 
