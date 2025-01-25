@@ -13,17 +13,13 @@ TIMELINE                                        EVENT               STATUS
 
 6. Bandwidth testing                            bandwidth_test()    DONE
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+7. Send a packet                                microtcp_send()     TODAY
 
-TO KNOW (for examination)
-~ LEARN EACH ARGUMENT's OPERATION (all functions)
+8. Receive a packet                             microtcp_receive()  SATURDAY - TUESDAY
 
-    -the casting to uint8_t is done because thats the required type
+9. Implement Peer - Host interaction            test_client() & test_server     28th - 30th
 
-    -sendto(): if address is wrong then it returns -1, else if all good
-    the size (in bytes) of the packet that is about to be sent is returned,
-    at first the size is 0 thats why we use it for error checking olny.
-
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     -recvfrom(): blocks the flow of the program until the data reached the
     address (provided in the arguents). When data reached target it returns
     the size in bytes. If invalid, -1 is returned.
@@ -111,6 +107,16 @@ NOTES:
         f. client receives FIN, validates its a FIN
         g. client creates and send an ACK                            (ACK)
         h. SOCKET CLOSED
+
+Phase B:
+
+    Step 1 ->   window size of every packet of the 3-way handshake is set to 
+               MICROTCP_WIN_SIZE
+        
+    Step 2 ->   shutdown is initiated when microtcp_recv() gets a FIN packet
+               & recv() checks EVERY packet if its a FIN.
+    
+    Step 3 ->   
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
