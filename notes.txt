@@ -108,6 +108,16 @@ NOTES:
         g. client creates and send an ACK                            (ACK)
         h. SOCKET CLOSED
 
+Phase B:
+
+    Step 1 ->   window size of every packet of the 3-way handshake is set to 
+               MICROTCP_WIN_SIZE
+        
+    Step 2 ->   shutdown is initiated when microtcp_recv() gets a FIN packet
+               & recv() checks EVERY packet if its a FIN.
+    
+    Step 3 ->   
+
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 ~ HEADER
