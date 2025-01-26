@@ -367,23 +367,104 @@ microtcp_shutdown (microtcp_sock_t *socket, int how)
 ssize_t
 microtcp_send (microtcp_sock_t *socket, const void *buffer, size_t length, int flags)
 {
-  /* packet to be sent */
-  microtcp_header_t sending_packet;
+  microtcp_header_t sending_packet;  /* packet to be sent */
+  void *packet_buffer; /* buffer to store header and data */
   
+  size_t segments;
+  size_t segment_size;
+  size_t fill_segment_size;
+  size_t bytes_sent; 
+
+  int i;
+
   if (!buffer) {
     perror("Buffer is NULL");
     return 0; /* nothing to send */
   }
 
   /* while the bytes sent are lt the length of the buffer */
-  size_t bytes_sent = 0;
+  bytes_sent = 0;
   while (bytes_sent < length) {
+    /* first splitting buffer into segments */
+    segment_size = min(socket->curr_win_size, min(socket->cwnd, length - bytes_sent));
+    segments = segment_size / (MICROTCP_MSS - sizeof(sending_packet)); 
 
-    // send packet
+    /* then send the packets */
+    for (i=0; i<segments; i++) {
+      packet_buffer = malloc(MICROTCP_MSS);
+
+      /* create the packet */
+      sending_packet.seq_number =   socket->ack_number;
+      sending_packet.ack_number =   socket->seq_number + 1;
+      sending_packet.control =      0;
+      sending_packet.window =       socket->curr_win_size;
+      sending_packet.data_len =     MICROTCP_MSS - sizeof(sending_packet);
+      sending_packet.future_use0 =  0;
+      sending_packet.future_use1 =  0;
+      sending_packet.future_use2 =  0;
+      sending_packet.checksum = crc32((uint8_t *)&sending_packet, sizeof(sending_packet));
+
+      /* copy the header and data to the buffer */
+      memcpy(packet_buffer, &sending_packet, sizeof(sending_packet));
+      memcpy(packet_buffer + sizeof(sending_packet), buffer + bytes_sent, MICROTCP_MSS - sizeof(sending_packet));
+
+      /* send the segment */
+      if (sendto(socket->sd, packet_buffer, MICROTCP_MSS, flags, socket->server_addr, sizeof(struct sockaddr)) == -1) {
+        socket->state = INVALID;
+        perror("Failed to send packet");
+        free(packet_buffer);
+        return -1; 
+      }
+      bytes_sent = bytes_sent + MICROTCP_MSS - sizeof(sending_packet);
+      socket->seq_number = socket->ack_number;
+      socket->ack_number = socket->seq_number + 1;
+      socket->packets_send++;
+      socket->bytes_send = socket->bytes_send + MICROTCP_MSS - sizeof(sending_packet);
+      free(packet_buffer);
+    }
+    /* check if there are remaining data for fill segment */
+    if (segment_size % (MICROTCP_MSS - sizeof(sending_packet)) > 0) {
+      fill_segment_size = segment_size % (MICROTCP_MSS - sizeof(sending_packet));
+      packet_buffer = malloc(fill_segment_size + sizeof(sending_packet));
+      segments++;
+
+      /* create the packet */
+      sending_packet.seq_number =   socket->ack_number;
+      sending_packet.ack_number =   socket->seq_number + 1;
+      sending_packet.control =      0;
+      sending_packet.window =       socket->curr_win_size;
+      sending_packet.data_len =     fill_segment_size;
+      sending_packet.future_use0 =  0;
+      sending_packet.future_use1 =  0;
+      sending_packet.future_use2 =  0;
+      sending_packet.checksum = crc32((uint8_t *)&sending_packet, sizeof(sending_packet));
+
+      /* copy the header and data to the buffer */
+      memcpy(packet_buffer, &sending_packet, sizeof(sending_packet));
+      memcpy(packet_buffer + sizeof(sending_packet), buffer + bytes_sent, fill_segment_size);
+
+      /* send the segment */
+      if (sendto(socket->sd, packet_buffer, fill_segment_size + sizeof(sending_packet), flags, socket->server_addr, sizeof(struct sockaddr)) == -1) {
+        socket->state = INVALID;
+        perror("Failed to send packet");
+        free(packet_buffer);
+        return -1; 
+      }
+
+      bytes_sent = bytes_sent + fill_segment_size;
+      socket->seq_number = socket->ack_number;
+      socket->ack_number = socket->seq_number + 1;
+      socket->packets_send++;
+      socket->bytes_send = socket->bytes_send + fill_segment_size;
+      free(packet_buffer); 
+    }
+  
+    // check dup acks
+
     
-    // check timeout 
     
-    // check dup acks    
+    // check timeout
+    
 
     if (socket->cwnd <= socket->ssthresh) {
       /* slow start */
