@@ -374,8 +374,12 @@ microtcp_send (microtcp_sock_t *socket, const void *buffer, size_t length, int f
   size_t segment_size;
   size_t fill_segment_size;
   size_t bytes_sent; 
-
   int i;
+
+  /* timeout variables */
+  struct timeval timeout;
+  timeout.tv_sec = 0;
+  timeout.tv_usec = MICROTCP_ACK_TIMEOUT_US;
 
   if (!buffer) {
     perror("Buffer is NULL");
@@ -395,7 +399,7 @@ microtcp_send (microtcp_sock_t *socket, const void *buffer, size_t length, int f
 
       /* create the packet */
       sending_packet.seq_number =   socket->ack_number;
-      sending_packet.ack_number =   socket->seq_number + 1;
+      sending_packet.ack_number =   socket->seq_number + MICROTCP_MSS - sizeof(sending_packet); /* data length */
       sending_packet.control =      0;
       sending_packet.window =       socket->curr_win_size;
       sending_packet.data_len =     MICROTCP_MSS - sizeof(sending_packet);
@@ -416,8 +420,8 @@ microtcp_send (microtcp_sock_t *socket, const void *buffer, size_t length, int f
         return -1; 
       }
       bytes_sent = bytes_sent + MICROTCP_MSS - sizeof(sending_packet);
-      socket->seq_number = socket->ack_number;
-      socket->ack_number = socket->seq_number + 1;
+      socket->seq_number = sending_packet.seq_number;
+      socket->ack_number = sending_packet.ack_number;
       socket->packets_send++;
       socket->bytes_send = socket->bytes_send + MICROTCP_MSS - sizeof(sending_packet);
       free(packet_buffer);
@@ -430,7 +434,7 @@ microtcp_send (microtcp_sock_t *socket, const void *buffer, size_t length, int f
 
       /* create the packet */
       sending_packet.seq_number =   socket->ack_number;
-      sending_packet.ack_number =   socket->seq_number + 1;
+      sending_packet.ack_number =   socket->seq_number + fill_segment_size; /* data length */
       sending_packet.control =      0;
       sending_packet.window =       socket->curr_win_size;
       sending_packet.data_len =     fill_segment_size;
@@ -448,18 +452,19 @@ microtcp_send (microtcp_sock_t *socket, const void *buffer, size_t length, int f
         socket->state = INVALID;
         perror("Failed to send packet");
         free(packet_buffer);
-        return -1; 
+        return -1;
       }
 
       bytes_sent = bytes_sent + fill_segment_size;
-      socket->seq_number = socket->ack_number;
-      socket->ack_number = socket->seq_number + 1;
+      socket->seq_number = sending_packet.seq_number;
+      socket->ack_number = sending_packet.ack_number;
       socket->packets_send++;
       socket->bytes_send = socket->bytes_send + fill_segment_size;
       free(packet_buffer); 
     }
-  
     // check dup acks
+    /* wait for ACKs */
+
 
     
     
