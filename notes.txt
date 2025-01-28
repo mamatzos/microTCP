@@ -15,9 +15,9 @@ TIMELINE                                        EVENT               STATUS
 
 7. Send a packet                                microtcp_send()     TODAY
 
-8. Receive a packet                             microtcp_receive()  SATURDAY - TUESDAY
+8. Receive a packet                             microtcp_receive()  MONDAY - TUESDAY
 
-9. Implement Peer - Host interaction            test_client() & test_server     28th - 30th
+9. Implement Peer - Host interaction            test_client() & test_server()     28th - 30th
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     -recvfrom(): blocks the flow of the program until the data reached the
@@ -147,8 +147,25 @@ Phase B:
 
 ~> SEND AND RECEIVE PACKET NEXT PHASE
 
-test_client() and test_server():
+!!! test_client() and test_server():
     send() and recv() are working until we finish a file (e.g. txt). If a packet is not 
     valid we return -1 (inside while) and increment packets lost.
 
+
+microtcp_send():
+
+        a.  Check buffer size
+
+        b.  Iteration for sending packets ->  bytes_sent() < length
+                segment_size -> min value between (curr_wiz_size, cwnd, remaining length of buffer)
+
+        c.  Calculate amount of whole segments, then send each one of them
+            c1. create packet
+            c2. create buffer (copy in it the header and data)(hold space for header when copying data)
+            c3. send packet
+
+        d.  Check for fill segment 
+            d1. repeat c1-c3 for the size of fill_segment_size
+
+    
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
