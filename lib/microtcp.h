@@ -50,6 +50,22 @@
 /* Added macro for min */
 #define min(a, b) ((a) < (b) ? (a) : (b))
 
+/**  
+ * Added linked list that stores a list of packets 
+ */
+typedef struct {
+  microtcp_header_t *packet;
+  size_t size;
+  struct packet_list_t *next;
+} packet_list_t;
+
+/* linked list functions */
+packet_list_t *packet_list_create(microtcp_header_t *packet, size_t size);
+void packet_list_add(packet_list_t *list, microtcp_header_t *packet, size_t size);
+void packet_list_remove(packet_list_t *list, microtcp_header_t *packet, size_t size);
+void packet_list_free(packet_list_t *list);
+void packet_list_print(packet_list_t *list);
+
 /**
  * Possible states of the microTCP socket
  *

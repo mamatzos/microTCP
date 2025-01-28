@@ -21,6 +21,61 @@
 #include "microtcp.h"
 #include "../utils/crc32.h"
 
+packet_list_t *
+packet_list_create (microtcp_header_t *packet, size_t size)
+{
+  packet_list_t *new_list = malloc(sizeof(packet_list_t));
+  new_list->packet = packet;
+  new_list->size = size;
+  new_list->next = NULL;
+  return new_list;
+}
+
+void
+packet_list_add (packet_list_t *list, microtcp_header_t *packet, size_t size)
+{
+  packet_list_t *new_list = packet_list_create(packet, size);
+  while (list->next != NULL) {
+    list = list->next;
+  }
+  list->next = new_list;
+}
+
+void
+packet_list_remove (packet_list_t *list, microtcp_header_t *packet, size_t size)
+{
+  packet_list_t *prev = list;
+  while (list != NULL) {
+    if (list->packet == packet && list->size == size) {
+      prev->next = list->next;
+      free(list);
+      break;
+    }
+    prev = list;
+    list = list->next;
+  }
+}
+
+void
+packet_list_free (packet_list_t *list)
+{
+  packet_list_t *next;
+  while (list != NULL) {
+    next = list->next;
+    free(list);
+    list = next;
+  }
+}
+
+void
+packet_list_print (packet_list_t *list)
+{
+  while (list != NULL) {
+    printf("Packet: %p, Size: %lu\n", list->packet, list->size);
+    list = list->next;
+  }
+}
+
 microtcp_sock_t
 microtcp_socket (int domain, int type, int protocol)
 {
@@ -367,13 +422,18 @@ microtcp_shutdown (microtcp_sock_t *socket, int how)
 ssize_t
 microtcp_send (microtcp_sock_t *socket, const void *buffer, size_t length, int flags)
 {
-  microtcp_header_t sending_packet;  /* packet to be sent */
+  microtcp_header_t sending_packet;  /* packet to be sent     */
+  microtcp_header_t receiving_ack;   /* received ACK packet   */
+  packet_list_t *packet_list;        /* list of sent packets  */
+  packet_list_t *ack_list;           /* list of received ACKs */
+  packet_list_t *tmp_packet_list;    /* temporary packet list */
   void *packet_buffer; /* buffer to store header and data */
   
   size_t segments;
   size_t segment_size;
-  size_t fill_segment_size;
+  size_t fill_segment_data_size;
   size_t bytes_sent; 
+  ssize_t received_ack;
   int i;
 
   /* timeout variables */
@@ -419,6 +479,7 @@ microtcp_send (microtcp_sock_t *socket, const void *buffer, size_t length, int f
         free(packet_buffer);
         return -1; 
       }
+      packet_list_add(packet_list, &sending_packet, sizeof(sending_packet));
       bytes_sent = bytes_sent + MICROTCP_MSS - sizeof(sending_packet);
       socket->seq_number = sending_packet.seq_number;
       socket->ack_number = sending_packet.ack_number;
@@ -428,16 +489,16 @@ microtcp_send (microtcp_sock_t *socket, const void *buffer, size_t length, int f
     }
     /* check if there are remaining data for fill segment */
     if (segment_size % (MICROTCP_MSS - sizeof(sending_packet)) > 0) {
-      fill_segment_size = segment_size % (MICROTCP_MSS - sizeof(sending_packet));
-      packet_buffer = malloc(fill_segment_size + sizeof(sending_packet));
+      fill_segment_data_size = segment_size % (MICROTCP_MSS - sizeof(sending_packet));
+      packet_buffer = malloc(fill_segment_data_size + sizeof(sending_packet));
       segments++;
 
       /* create the packet */
       sending_packet.seq_number =   socket->ack_number;
-      sending_packet.ack_number =   socket->seq_number + fill_segment_size; /* data length */
+      sending_packet.ack_number =   socket->seq_number + fill_segment_data_size; /* data length */
       sending_packet.control =      0;
       sending_packet.window =       socket->curr_win_size;
-      sending_packet.data_len =     fill_segment_size;
+      sending_packet.data_len =     fill_segment_data_size;
       sending_packet.future_use0 =  0;
       sending_packet.future_use1 =  0;
       sending_packet.future_use2 =  0;
@@ -445,30 +506,57 @@ microtcp_send (microtcp_sock_t *socket, const void *buffer, size_t length, int f
 
       /* copy the header and data to the buffer */
       memcpy(packet_buffer, &sending_packet, sizeof(sending_packet));
-      memcpy(packet_buffer + sizeof(sending_packet), buffer + bytes_sent, fill_segment_size);
+      memcpy(packet_buffer + sizeof(sending_packet), buffer + bytes_sent, fill_segment_data_size);
 
       /* send the segment */
-      if (sendto(socket->sd, packet_buffer, fill_segment_size + sizeof(sending_packet), flags, socket->server_addr, sizeof(struct sockaddr)) == -1) {
+      if (sendto(socket->sd, packet_buffer, fill_segment_data_size + sizeof(sending_packet), flags, socket->server_addr, sizeof(struct sockaddr)) == -1) {
         socket->state = INVALID;
         perror("Failed to send packet");
         free(packet_buffer);
         return -1;
       }
-
-      bytes_sent = bytes_sent + fill_segment_size;
+      packet_list_add(packet_list, &sending_packet, sizeof(sending_packet));
+      bytes_sent = bytes_sent + fill_segment_data_size;
       socket->seq_number = sending_packet.seq_number;
       socket->ack_number = sending_packet.ack_number;
       socket->packets_send++;
-      socket->bytes_send = socket->bytes_send + fill_segment_size;
+      socket->bytes_send = socket->bytes_send + fill_segment_data_size;
       free(packet_buffer); 
     }
-    // check dup acks
-    /* wait for ACKs */
+    /* wait for ACKs */ 
+    for (i=0; i<segments; i++) {
+      if (setsockopt(socket->sd, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout)) < 0) {
+        perror("setsockopt failure");
+      }
+      received_ack = recvfrom(socket->sd, &receiving_ack, sizeof(receiving_ack), 0, socket->server_addr, sizeof(struct sockaddr));
+      
+      if (received_ack == -1) { 
+        /* timeout */
+        socket->ssthresh = socket->cwnd / 2;
+        socket->cwnd = MICROTCP_MSS;
+
+      } /* ACK wasn't received */
+
+      packet_list_add(ack_list, &receiving_ack, sizeof(receiving_ack));
+      /* finding the corresponding packet to the ACK */
+      tmp_packet_list = packet_list;
+      while (tmp_packet_list != NULL) {
+        if (tmp_packet_list->packet->ack_number == receiving_ack.seq_number) {
+          break;
+        }
+        tmp_packet_list = tmp_packet_list->next;
+      }
+
+      /* first compare checksums */
+      if (receiving_ack.checksum != tmp_packet_list->packet->checksum) {
+        socket->state = INVALID;
+        perror("ACK checksums mismatch");
+        return -1;
+      }
+      
 
 
-    
-    
-    // check timeout
+    }
     
 
     if (socket->cwnd <= socket->ssthresh) {
