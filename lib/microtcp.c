@@ -412,7 +412,7 @@ microtcp_shutdown (microtcp_sock_t *socket, int how)
 
     return socket->sd; /* return the socket descriptor */
 
-  } else {
+  }else {
     /* every other state is not accepted for shutdown */
     socket->state = INVALID;
     perror("Invalid state for shutdown");
@@ -554,6 +554,9 @@ microtcp_send (microtcp_sock_t *socket, const void *buffer, size_t length, int f
         /* reducing window size */
         socket->curr_win_size = socket->curr_win_size - packet_list->packet->data_len - sizeof(sending_packet);
 
+        //change cwnd and thresh
+        socket->ssthresh = socket->cwnd/2;
+        socket->cwnd = min(MICROTCP_MSS, socket->ssthresh);
 
       } /* ACK wasn't received */
 
@@ -599,6 +602,9 @@ microtcp_send (microtcp_sock_t *socket, const void *buffer, size_t length, int f
             }
             /* reducing window size */
             socket->curr_win_size = socket->curr_win_size - tmp_packet_list->packet->data_len - sizeof(sending_packet);
+          
+            socket->ssthresh = socket->cwnd/2;
+            socket->cwnd = socket->cwnd/2 + 1;
           }
         } else {
           /* packets isnt a duplicate so all good */
@@ -609,9 +615,6 @@ microtcp_send (microtcp_sock_t *socket, const void *buffer, size_t length, int f
 
     }
     
-
-    /* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ suggest */
-
     packet_list_t retransmit_lost = tmp_packet_list2;
     while (retransmit_lost != NULL) {
       if (retransmit_lost->acked == 0) {
@@ -620,7 +623,8 @@ microtcp_send (microtcp_sock_t *socket, const void *buffer, size_t length, int f
           perror("Failed to send packet");
           return -1;
         }
-      retransmit_lost = retransmit_lost->next;
+        retransmit_lost = retransmit_lost->next;
+      }
     }
 
     if (socket->cwnd <= socket->ssthresh) {
@@ -639,11 +643,9 @@ microtcp_send (microtcp_sock_t *socket, const void *buffer, size_t length, int f
 ssize_t
 microtcp_recv (microtcp_sock_t *socket, void *buffer, size_t length, int flags)
 {
-  
   /* while the bytes received are lt the length of the buffer */
   size_t bytes_recv = 0;
-  
-
 
   return bytes_recv;
+
 }
