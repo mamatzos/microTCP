@@ -38,6 +38,7 @@ packet_list_add (packet_list_t *list, microtcp_header_t *packet, size_t size)
   while (list->next != NULL) {
     list = list->next;
   }
+  list->acked = 0;
   list->next = new_list;
 }
 
@@ -427,6 +428,7 @@ microtcp_send (microtcp_sock_t *socket, const void *buffer, size_t length, int f
   packet_list_t *packet_list;        /* list of sent packets  */
   packet_list_t *ack_list;           /* list of received ACKs */
   packet_list_t *tmp_packet_list;    /* temporary packet list */
+  packet_list_t tmp_packet_list2;`   /* temporary packet list, find acked packets */
   void *packet_buffer; /* buffer to store header and data */
   
   size_t segments;
@@ -434,7 +436,7 @@ microtcp_send (microtcp_sock_t *socket, const void *buffer, size_t length, int f
   size_t fill_segment_data_size;
   size_t bytes_sent; 
   ssize_t received_ack;
-  int i;
+  int i, duplicate_ack_count;
 
   /* timeout variables */
   struct timeval timeout;
@@ -479,6 +481,9 @@ microtcp_send (microtcp_sock_t *socket, const void *buffer, size_t length, int f
         free(packet_buffer);
         return -1; 
       }
+      /* reducing window size */
+      socket->curr_win_size = socket->curr_win_size - MICROTCP_MSS;
+
       packet_list_add(packet_list, &sending_packet, sizeof(sending_packet));
       bytes_sent = bytes_sent + MICROTCP_MSS - sizeof(sending_packet);
       socket->seq_number = sending_packet.seq_number;
@@ -515,6 +520,9 @@ microtcp_send (microtcp_sock_t *socket, const void *buffer, size_t length, int f
         free(packet_buffer);
         return -1;
       }
+      /* reducing window size */
+      socket->curr_win_size = socket->curr_win_size - fill_segment_data_size - sizeof(sending_packet);
+
       packet_list_add(packet_list, &sending_packet, sizeof(sending_packet));
       bytes_sent = bytes_sent + fill_segment_data_size;
       socket->seq_number = sending_packet.seq_number;
@@ -529,11 +537,23 @@ microtcp_send (microtcp_sock_t *socket, const void *buffer, size_t length, int f
         perror("setsockopt failure");
       }
       received_ack = recvfrom(socket->sd, &receiving_ack, sizeof(receiving_ack), 0, socket->server_addr, sizeof(struct sockaddr));
-      
+        
+
       if (received_ack == -1) { 
         /* timeout */
         socket->ssthresh = socket->cwnd / 2;
         socket->cwnd = MICROTCP_MSS;
+
+        /* timeout occured */
+        /* retransmit */
+        if (sendto(socket->sd, packet_list->packet, sizeof(packet_list->packet), flags, socket->server_addr, sizeof(struct sockaddr)) == -1) {
+          socket->state = INVALID;
+          perror("Failed to send packet");
+          return -1;
+        }
+        /* reducing window size */
+        socket->curr_win_size = socket->curr_win_size - packet_list->packet->data_len - sizeof(sending_packet);
+
 
       } /* ACK wasn't received */
 
@@ -542,6 +562,7 @@ microtcp_send (microtcp_sock_t *socket, const void *buffer, size_t length, int f
       tmp_packet_list = packet_list;
       while (tmp_packet_list != NULL) {
         if (tmp_packet_list->packet->ack_number == receiving_ack.seq_number) {
+          tmp_packet_list->acked = 1;
           break;
         }
         tmp_packet_list = tmp_packet_list->next;
@@ -553,11 +574,54 @@ microtcp_send (microtcp_sock_t *socket, const void *buffer, size_t length, int f
         perror("ACK checksums mismatch");
         return -1;
       }
-      
+      /* ensure received packet is ACK */
+      if (receiving_ack.control != MICROTCP_ACK) {
+        socket->state = INVALID;
+        perror("Received packet is not ACK");
+        return -1;
+      } else {
+        /* ACK received */
+        /* inceasing window size */
+        socket->curr_win_size = socket->curr_win_size + tmp_packet_list->packet->data_len + sizeof(sending_packet);
+        /* checking for dup ACKs */
+        if (receiving_ack.ack_number == socket->ack_number) {
+          socket->packets_lost++;
+          socket->bytes_lost = socket->bytes_lost + tmp_packet_list->packet->data_len;
+          duplicate_ack_count++;  
+          if (duplicate_ack_count == 3) {
+            /*   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
+            /* retransmit lost packet  */ 
+            if (sendto(socket->sd, tmp_packet_list->packet, sizeof(tmp_packet_list->packet), flags, socket->server_addr, sizeof(struct sockaddr)) == -1) {
+              socket->state = INVALID;
+              perror("Failed to send packet");
+              return -1;
+            }
+            /* reducing window size */
+            socket->curr_win_size = socket->curr_win_size - tmp_packet_list->packet->data_len - sizeof(sending_packet);
+          }
+        } else {
+          /* packets isnt a duplicate so all good */
+          duplicate_ack_count = 0;    
+        }
 
+      }
 
     }
     
+
+    /* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ suggest */
+
+    packet_list_t retransmit_lost = tmp_packet_list2;
+    while (retransmit_lost != NULL) {
+      if (retransmit_lost->acked == 0) {
+        if (sendto(socket->sd, retransmit_lost->packet, sizeof(retransmit_lost->packet), flags, socket->server_addr, sizeof(struct sockaddr)) == -1) {
+          socket->state = INVALID;
+          perror("Failed to send packet");
+          return -1;
+        }
+      retransmit_lost = retransmit_lost->next;
+    }
 
     if (socket->cwnd <= socket->ssthresh) {
       /* slow start */
@@ -578,11 +642,8 @@ microtcp_recv (microtcp_sock_t *socket, void *buffer, size_t length, int flags)
   
   /* while the bytes received are lt the length of the buffer */
   size_t bytes_recv = 0;
-  while (bytes_recv < length) {
+  
 
-
-
-  }
 
   return bytes_recv;
 }

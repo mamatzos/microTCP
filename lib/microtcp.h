@@ -55,6 +55,7 @@
  */
 typedef struct {
   microtcp_header_t *packet;
+  int acked;                    /* if 1 then it has been acked, 0 otherwise */
   size_t size;
   struct packet_list_t *next;
 } packet_list_t;
